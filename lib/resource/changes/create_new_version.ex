@@ -17,14 +17,17 @@ defmodule AshPaperTrail.Resource.Changes.CreateNewVersion do
 
   defp create_new_version(changeset) do
     Ash.Changeset.after_action(changeset, fn changeset, result ->
-      if changeset.action_type in [:create, :destroy] ||
-           (changeset.action_type == :update && changeset.context.changed?) do
+      if changing?(changeset) do
         {:ok, result, build_notifications(changeset, result)}
       else
         {:ok, result}
       end
     end)
   end
+
+  defp changing?(%{action_type: :create}), do: true
+  defp changing?(%{action_type: :destroy}), do: true
+  defp changing?(%{action_type: :update, context: context}), do: Map.get(context, :changed?, true)
 
   defp build_notifications(changeset, result) do
     version_resource = AshPaperTrail.Resource.Info.version_resource(changeset.resource)
